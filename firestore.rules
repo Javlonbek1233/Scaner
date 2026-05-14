@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- User Profiles ---
+    match /users/{userId} {
+      allow get: if isSignedIn(); // Allow searching for other users (public bits) or self
+      allow list: if isSignedIn(); // Restricted by query filter in practice
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'avatarUrl', 'dailyWaterGoal', 'dailySleepGoal'])
+      );
+      allow delete: if false; // Profiles are rarely deleted via client
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email']) 
+        && data.uid == request.auth.uid
+        && data.email is string
+        && (data.get('displayName', '') is string && data.get('displayName', '').size() <= 100)
+        && (data.get('dailyWaterGoal', 0) is number)
+        && (data.get('dailySleepGoal', 0) is number);
+    }
+
+    // --- Health Logs ---
+    match /users/{userId}/logs/{logId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidHealthLog(incoming());
+      allow update: if isOwner(userId) && isValidHealthLog(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['value', 'notes'])
+      );
+      allow delete: if isOwner(userId);
+    }
+
+    function isValidHealthLog(data) {
+      return data.keys().hasAll(['userId', 'type', 'value', 'timestamp'])
+        && data.userId == request.auth.uid
+        && data.type in ['sleep', 'water', 'activity', 'mood']
+        && data.value is number
+        && data.timestamp is timestamp;
+    }
+
+    // --- Habits ---
+    match /users/{userId}/habits/{habitId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidHabit(incoming());
+      allow update: if isOwner(userId) && isValidHabit(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'currentStreak', 'lastCompleted', 'title'])
+      );
+      allow delete: if isOwner(userId);
+    }
+
+    function isValidHabit(data) {
+      return data.keys().hasAll(['userId', 'title'])
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() <= 200
+        && (data.get('completed', false) is bool)
+        && (data.get('currentStreak', 0) is number);
+    }
+  }
+}

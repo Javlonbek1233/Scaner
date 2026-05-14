@@ -1,0 +1,6 @@
+{
+  "name": "NeuroScan AI",
+  "description": "Futuristic AI-powered health analysis platform for smart insights on habits, sleep, and mood.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["AI Health Analysis", "Sleep Tracking", "Mood Insights"]
+}

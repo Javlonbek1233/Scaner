@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user basic information and health preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "dailyWaterGoal": { "type": "number" },
+        "dailySleepGoal": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "HealthLog": {
+      "title": "Health Log",
+      "description": "Daily metrics for health tracking",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["sleep", "water", "activity", "mood"] },
+        "value": { "type": "number" },
+        "unit": { "type": "string" },
+        "notes": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "value", "timestamp"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "Personal habits to track",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "currentStreak": { "type": "number" },
+        "lastCompleted": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile data"
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": "HealthLog",
+      "description": "Individual health log entries for a user"
+    },
+    "/users/{userId}/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "Daily habits for a user"
+    }
+  }
+}
